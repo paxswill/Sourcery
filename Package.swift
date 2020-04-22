@@ -33,7 +33,6 @@ let package = Package(
             "SourceKittenFramework",
             "StencilSwiftKit",
             "xcproj",
-            "TryCatch",
         ]),
         .target(name: "SourceryRuntime"),
         .target(name: "SourceryUtils", dependencies: [
@@ -53,6 +52,5 @@ let package = Package(
           "SourceryRuntime",
           "SourceryUtils"
         ]),
-        .target(name: "TryCatch", path: "TryCatch"),
     ]
 )

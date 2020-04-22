@@ -345,19 +345,20 @@ extension Sourcery {
     }
 
     private func load(artifacts: String, modifiedDate: Date) -> FileParserResult? {
-        var unarchivedResult: FileParserResult?
-        SwiftTryCatch.try({
-
-            if let unarchived = NSKeyedUnarchiver.unarchiveObject(withFile: artifacts) as? FileParserResult {
-                if unarchived.sourceryVersion == Sourcery.version, unarchived.modifiedDate == modifiedDate {
-                    unarchivedResult = unarchived
-                }
-            }
-        }, catch: { _ in
-            Log.warning("Failed to unarchive \(artifacts) due to error, re-parsing")
-        }, finallyBlock: {})
-
-        return unarchivedResult
+        let artifactsPath = Path(artifacts)
+        guard let artifactsData = try? artifactsPath.read() else {
+            Log.warning("Failed to unarchive \(artifacts) as the path does not exist.")
+            return nil
+        }
+        guard let unarchived: FileParserResult = try? NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(artifactsData) as? FileParserResult else {
+            Log.warning("Failed to unarchive \(artifacts) due to error, re-parsing.")
+            return nil
+        }
+        guard unarchived.sourceryVersion == Sourcery.version, unarchived.modifiedDate == modifiedDate else {
+            Log.warning("Failed to unarchive \(artifacts) because of a version mismatch.")
+            return nil
+        }
+        return unarchived
     }
 }
 
@@ -467,16 +468,11 @@ extension Sourcery {
         }
 
         var result: String = ""
-        SwiftTryCatch.try({
-            do {
-                result = try Generator.generate(parsingResult.types, functions: parsingResult.functions, template: template, arguments: self.arguments)
-            } catch {
-                Log.error(error)
-            }
-        }, catch: { error in
-            result = error?.description ?? ""
-        }, finallyBlock: {})
-
+        do {
+            result = try Generator.generate(parsingResult.types, functions: parsingResult.functions, template: template, arguments: self.arguments)
+        } catch {
+            Log.error(error)
+        }
         return try processRanges(in: parsingResult, result: result, outputPath: outputPath)
     }
 
